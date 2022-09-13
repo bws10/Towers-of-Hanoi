@@ -6,15 +6,17 @@ var running = false;
 var aniDuration = 150;
 var opt = Math.pow(2, d) - 1;
 var count = 0;
+var move = [];
 const diskNum = document.querySelector("#diskNum");
 diskNum.value = d;
 var canvas = oCanvas.create({
   canvas: "#canvas",
   background: "#222",
   fps: 60,
+  zindex: "back",
 });
 canvas.height = 500;
-canvas.width = window.innerWidth;
+canvas.width = window.innerWidth < 500 ? window.innerWidth : 700;
 var dw = (canvas.width - 44) / 3 - 2;
 var dwMin = 60;
 var wp = 20;
@@ -40,49 +42,113 @@ async function submitDisks() {
   }
   return false;
 }
-
-// Center post
-var center = canvas.display
+var bottomLayer = canvas.display
   .rectangle({
-    x: canvas.width / 2,
-
-    height: canvas.height / 1.75,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    origin: { x: "center", y: "center" },
-    width: wp,
-    fill: "#fff",
+    fill: "transparent",
+    origin: { x: "left", y: "top" },
+    x: 0,
+    y: 0,
+    height: canvas.height,
+    width: canvas.width,
+    zindex: 1,
   })
   .add();
+
+var diskLayer = canvas.display
+  .rectangle({
+    fill: "transparent",
+    x: 0,
+    y: 0,
+    origin: { x: "left", y: "top" },
+    height: canvas.height,
+    width: canvas.width,
+    zindex: 2,
+  })
+  .add();
+
+// Center post
+var center = canvas.display.rectangle({
+  x: canvas.width / 2,
+
+  height: canvas.height / 1.75,
+  borderTopLeftRadius: 10,
+  borderTopRightRadius: 10,
+  origin: { x: "center", y: "center" },
+  width: wp,
+  fill: "#fff",
+  zindex: "front",
+});
+bottomLayer.addChild(center);
 center.y = canvas.height - center.height / 2 - 100;
 
 //center base
-var centerBase = canvas.display
-  .rectangle({
-    x: canvas.width / 2 - w / 2,
-    y: canvas.height - 100,
-    height: wp,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+var centerBase = canvas.display.rectangle({
+  x: canvas.width / 2 - w / 2,
+  y: canvas.height - 100,
+  height: wp,
+  borderTopLeftRadius: 10,
+  borderTopRightRadius: 10,
 
-    width: w,
-    fill: "#fff",
-  })
-  .add();
+  width: w,
+  fill: "#fff",
+});
+bottomLayer.addChild(centerBase);
 
 // left post
-var left = center
-  .clone({
-    x: (canvas.width / 6) * 1,
-  })
-  .add();
+var left = center.clone({
+  x: (canvas.width / 6) * 1,
+});
+bottomLayer.addChild(left);
 
 // right post
-var right = center
-  .clone({
-    x: (canvas.width / 6) * 5,
+var right = center.clone({
+  x: (canvas.width / 6) * 5,
+});
+bottomLayer.addChild(right);
+
+var controlLayer = canvas.display
+  .rectangle({
+    fill: "transparent",
+    zindex: "front",
+    origin: { x: "left", y: "top" },
+    x: 0,
+    y: 0,
+    height: canvas.height,
+    width: canvas.width,
+    //stroke: "2px blue",
   })
   .add();
+var leftSelect = canvas.display.rectangle({
+  origin: { x: "center", y: "center" },
+  x: left.x,
+  y: left.y,
+  height: left.height,
+  width: canvas.width / 3,
+  fill: "transparent",
+  //stroke: "2px blue",
+});
+controlLayer.addChild(leftSelect);
+
+var centerSelect = canvas.display.rectangle({
+  origin: { x: "center", y: "center" },
+  x: center.x,
+  y: center.y,
+  height: center.height,
+  width: canvas.width / 3,
+  fill: "transparent",
+  //stroke: "2px blue",
+});
+controlLayer.addChild(centerSelect);
+var rightSelect = canvas.display.rectangle({
+  origin: { x: "center", y: "center" },
+  x: right.x,
+  y: right.y,
+  height: right.height,
+  width: canvas.width / 3,
+  fill: "transparent",
+  //stroke: "2px blue",
+});
+controlLayer.addChild(rightSelect);
 
 var disksProto = canvas.display.rectangle({
   fill: "#107B99",
@@ -229,7 +295,11 @@ function redrawDisks() {
 // Set up a tick function that will move all disks each frame
 
 canvas.setLoop(function () {
-  text.text = pause ? (first ? "Click to Play" : "Click to Replay") : "";
+  text.text = pause
+    ? first
+      ? "Click to Play"
+      : "Click to return disks to starting position"
+    : "";
 
   if (pause == true) canvas.timeline.stop();
 });
@@ -259,6 +329,7 @@ function resetRotation() {
   redrawDisks();
   text.text = pause ? (first ? "Click to Play" : "Click to Replay") : "";
   canvas.redraw();
+
   //moveDisc(leftPost, rightPost);
 }
 
@@ -278,46 +349,44 @@ function createDisk(options) {
     text: options.num,
     size: dh - 6 > 25 ? 25 : dh - 6,
   });
-  canvas.addChild(disk);
+  diskLayer.addChild(disk);
   disk.addChild(num);
   disks.push(disk);
   leftPost.push(disk);
 }
 // Set up play/pause control for the demo
-var text = canvas.display
-  .text({
-    x: canvas.width / 2,
-    y: 85,
-    origin: { x: "center", y: "center" },
-    fill: "#fff",
-    size: 25,
-    weight: "bold",
-    text: "Click to Play",
-  })
-  .add();
-var textCounter = canvas.display
-  .text({
-    x: canvas.width / 2,
-    y: 50,
-    origin: { x: "center", y: "center" },
-    fill: "#fff",
-    size: 40,
-    weight: "bold",
-    text: "Moves " + 0,
-  })
-  .add();
-var textOptimum = canvas.display
-  .text({
-    x: 20,
-    y: canvas.height - 50,
-    origin: { x: "left", y: "center" },
-    fill: "#fff",
-    size: 40,
-    weight: "bold",
-    text: "Optimum Moves " + opt,
-  })
-  .add();
-canvas.bind("click tap", async function () {
+var text = canvas.display.text({
+  x: canvas.width / 2,
+  y: 85,
+  origin: { x: "center", y: "center" },
+  fill: "#fff",
+  size: 25,
+  weight: "bold",
+  text: "Click to Play",
+});
+controlLayer.addChild(text);
+var textCounter = canvas.display.text({
+  x: canvas.width / 2,
+  y: 50,
+  origin: { x: "center", y: "center" },
+  fill: "#fff",
+  size: 40,
+  weight: "bold",
+  text: "Moves " + 0,
+});
+bottomLayer.addChild(textCounter);
+var textOptimum = canvas.display.text({
+  x: 20,
+  y: canvas.height - 50,
+  origin: { x: "left", y: "center" },
+  fill: "#fff",
+  size: 40,
+  weight: "bold",
+  text: "Optimum Moves " + opt,
+});
+bottomLayer.addChild(textOptimum);
+text.bind("click tap", async function () {
+  console.log("Text clicked");
   if (d == 0) {
     text.text = "Please Set the number of disks first";
     canvas.redraw();
@@ -344,6 +413,75 @@ canvas.bind("click tap", async function () {
   }
 });
 
+leftSelect.bind("click tap", async function () {
+  if (move.length == 0 && leftPost.length == 1) {
+    canvas.background.set("rgb(100,10,10)");
+    setTimeout(() => {
+      canvas.background.set("#222");
+    }, 500);
+    return;
+  }
+  move.push(leftPost);
+  console.log(move);
+  if (move.length == 2) {
+    await moveDisc(move[0], move[1]);
+    left.fill = "#fff";
+    center.fill = "#fff";
+    right.fill = "#fff";
+    canvas.redraw();
+    move = [];
+  } else {
+    left.fill = "green";
+    canvas.redraw();
+  }
+});
+
+centerSelect.bind("click tap", async function () {
+  if (move.length == 0 && centerPost.length == 1) {
+    canvas.background.set("rgb(100,10,10)");
+    setTimeout(() => {
+      canvas.background.set("#222");
+    }, 500);
+    return;
+  }
+  move.push(centerPost);
+  console.log(move);
+  if (move.length == 2) {
+    await moveDisc(move[0], move[1]);
+    left.fill = "#fff";
+    center.fill = "#fff";
+    right.fill = "#fff";
+    canvas.redraw();
+    move = [];
+  } else {
+    center.fill = "green";
+    canvas.redraw();
+  }
+});
+
+rightSelect.bind("click tap", async function () {
+  if (move.length == 0 && rightPost.length == 1) {
+    canvas.background.set("rgb(100,10,10)");
+    setTimeout(() => {
+      canvas.background.set("#222");
+    }, 500);
+    return;
+  }
+  move.push(rightPost);
+  console.log(move);
+  if (move.length == 2) {
+    await moveDisc(move[0], move[1]);
+    left.fill = "#fff";
+    center.fill = "#fff";
+    right.fill = "#fff";
+    canvas.redraw();
+    move = [];
+  } else {
+    right.fill = "green";
+    canvas.redraw();
+  }
+});
+
 function moveToStart(d) {
   d.forEach((disc, index) => {
     disc.animate(
@@ -360,6 +498,14 @@ function moveToStart(d) {
   });
 }
 async function moveDisc(s, t) {
+  if (s == t) return;
+  if (s[s.length - 1].id < t[t.length - 1].id) {
+    canvas.background.set("rgb(100,10,10)");
+    setTimeout(() => {
+      canvas.background.set("#222");
+    }, 500);
+    return;
+  }
   let res = new Promise(function (resolve) {
     s[s.length - 1].animate(
       {
@@ -402,11 +548,11 @@ async function moveDisc(s, t) {
     );
   });
   await res;
-  if (pause) {
+  if (pause && move.length == 0) {
     resetRotation();
     return;
   }
-  if (!pause) {
+  if (!pause || move.length == 2) {
     count = count + 1;
     textCounter.text = "Moves " + count;
     t.push(s.pop());
