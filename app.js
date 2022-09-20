@@ -7,6 +7,7 @@ var aniDuration = 120;
 var opt = Math.pow(2, d) - 1;
 var count = 0;
 var move = [];
+var undo = [];
 var dropHeight = 150;
 var dropping = false;
 var restartDelay = 300;
@@ -195,6 +196,8 @@ redrawDisks();
 function redrawDisks() {
   dh = 35;
   disks = [];
+  move = [];
+  undo = [];
   leftPost = [{ name: "left", post: left }];
   centerPost = [{ name: "center", post: center }];
   rightPost = [{ name: "right", post: right }];
@@ -389,13 +392,13 @@ async function textClick() {
     first = false;
   }
 }
-var undo = [];
+
 leftSelect.bind("click tap", async function () {
-  if (pause) {
-    pause = false;
-    running = true;
-    canvas.timeline.start();
-  }
+  // if (pause) {
+  //   pause = false;
+  //   running = true;
+  //   canvas.timeline.start();
+  // }
   if (move.length == 0 && leftPost.length == 1) {
     canvas.background.set("rgb(100,10,10)");
     setTimeout(() => {
@@ -584,12 +587,12 @@ async function moveDisc(s, t) {
     );
   });
   await res;
-  if (pause && move.length == 0) {
+  if (pause && move.length == 0 && undo.length == 0) {
     resetRotation();
     return;
   }
   if (!pause || move.length == 2) {
-    if (!move.length == 0) {
+    if (!pause || !move.length == 0) {
       count = count + 1;
       textCounter.text = "Moves " + count;
       t.push(s.pop());
