@@ -5,7 +5,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
     <link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon" />
+    <script
+      src="https://kit.fontawesome.com/ccbde957f1.js"
+      crossorigin="anonymous"
+    ></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js "></script>
     <title>Towers of Hanoi</title>
   </head>
@@ -13,13 +21,26 @@
     <canvas id="canvas"> </canvas>
     <form action="" onsubmit="submitDisks();return false">
       <div class="group">
-        <label for="diskNum">Number of Disks</label>
+        <label for="diskNum"
+          >Number of Disks
+          <span style="color: gray; line-height: 0.5; font-size: 12px"
+            >(Min 1 - Max 9)</span
+          ></label
+        >
         <input type="text" id="diskNum" />
+        <input type="submit" class="button" value="Set Disks" />
       </div>
-      <input type="submit" class="button" value="Set Disks" />
+      <div id="errorContainer">
+        <p id="error"></p>
+      </div>
     </form>
 
     <button class="button" onclick="submitDisks()">Reset</button>
+    <button id="undoButt" class="button" onclick="undoButton()">
+      <i class="fa-solid fa-rotate-left"></i>
+      Undo
+    </button>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/ocanvas/2.10.0/ocanvas.min.js"></script>
     <script type="text/javascript" src="./ocanvas-2.10.0.js"></script>
     <script type="text/javascript" src="./app.js"></script>
   </body>

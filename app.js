@@ -1,13 +1,20 @@
-var d = 3;
+var d = 0;
 var first = true;
 var pause = true;
 var endState = false;
 var running = false;
-var aniDuration = 150;
+var aniDuration = 120;
 var opt = Math.pow(2, d) - 1;
 var count = 0;
 var move = [];
+var dropHeight = 150;
+var dropping = false;
+var restartDelay = 300;
 const diskNum = document.querySelector("#diskNum");
+const error = document.querySelector("#error");
+const undoBut = document.querySelector("#undoButt");
+const canv = document.querySelector("#canvas");
+const ctx = canv.getContext("2d");
 diskNum.value = d;
 var canvas = oCanvas.create({
   canvas: "#canvas",
@@ -24,18 +31,32 @@ var dh = 30;
 var w = canvas.width - 40;
 var disks = [];
 async function submitDisks() {
+  dropping = true;
+  n = parseInt(diskNum.value);
+  numBool = isNaN(n);
+  if (numBool || n < 1 || n > 9) {
+    error.innerHTML =
+      "Number of disks must be a number greater than 0 and less than 10";
+    return;
+  } else {
+    error.innerHTML = "";
+  }
   if (running) {
+    count = 0;
+    textCounter.text = "Moves " + count;
+    canvas.redraw();
     disks.forEach((disk) => {
       disk.stop();
       console.log("Stopping Animation");
       setTimeout(async () => {
         await moveToStart(disks);
-        setTimeout(() => {
+        await setTimeout(() => {
           resetRotation();
           running = false;
+          endState = false;
           console.log("Running = " + running);
-        }, 1000);
-      }, 500);
+        }, 700);
+      }, restartDelay);
     });
   } else {
     resetRotation();
@@ -169,110 +190,10 @@ var leftPost = [{ name: "left", post: left }];
 var centerPost = [{ name: "center", post: center }];
 var rightPost = [{ name: "right", post: right }];
 depth = d;
-var diskColors = [
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-  "#107B99",
-  "#5F92C0",
-  "#c7509f",
-];
+var diskColors = ["#61c05f", "#5f92c0", "#bd5fc0", "#c08d5f"];
 redrawDisks();
 function redrawDisks() {
-  dh = 30;
+  dh = 35;
   disks = [];
   leftPost = [{ name: "left", post: left }];
   centerPost = [{ name: "center", post: center }];
@@ -284,24 +205,59 @@ function redrawDisks() {
     createDisk({
       width: dwMin + ((dw - dwMin) / j) * i,
       x: left.x,
-      y: center.y + (center.height / 2 - dh / 2) - dh * l,
+      y:
+        center.y +
+        (center.height / 2 - dh / 2) -
+        dh * l -
+        (center.height + dropHeight),
       depth: l + 1,
       num: i + 1,
       height: dh,
     });
   }
+  setTimeout(async () => {
+    if (d != 0) {
+      await cascade(disks, 175);
+    }
+  }, restartDelay);
+}
+
+function cascade(item, delay, i = 0) {
+  text.text = "";
+
+  if (i > item.length - 1) {
+    setTimeout(() => {
+      text.text = "Click to Play";
+      canvas.redraw();
+      dropping = false;
+    }, 1300);
+    return;
+  }
+  item[i].animate(
+    {
+      x: left.x,
+      y: center.y + (center.height / 2 - dh / 2) - dh * i,
+    },
+    {
+      duration: "short",
+      easing: "ease-out-bounce",
+      queue: "drop",
+      callback: function () {},
+    }
+  );
+  setTimeout(() => {
+    i++;
+    cascade(item, delay, i);
+  }, delay);
 }
 
 // Set up a tick function that will move all disks each frame
 
 canvas.setLoop(function () {
-  text.text = pause
-    ? first
-      ? "Click to Play"
-      : "Click to return disks to starting position"
-    : "";
-
   if (pause == true) canvas.timeline.stop();
+  if (!pause || dropping) text.text = "";
+  if (pause && !running && !dropping) text.text = "Click to Play";
+  if (endState) text.text = "Click to return disks to starting position";
 });
 
 function resetRotation() {
@@ -327,19 +283,20 @@ function resetRotation() {
   opt = Math.pow(2, d) - 1;
   textOptimum.text = "Optimum Moves " + opt;
   redrawDisks();
-  text.text = pause ? (first ? "Click to Play" : "Click to Replay") : "";
+  text.text = pause && !dropping ? "Click to Play" : "";
   canvas.redraw();
 
   //moveDisc(leftPost, rightPost);
 }
 
 function createDisk(options) {
+  let n = Math.floor((options.depth - 1) % diskColors.length);
   var disk = disksProto.clone({
     height: options.height,
     width: options.width,
     x: options.x,
     y: options.y,
-    fill: diskColors[options.depth - 1],
+    fill: diskColors[n],
 
     speed: 2,
   });
@@ -362,7 +319,7 @@ var text = canvas.display.text({
   fill: "#fff",
   size: 25,
   weight: "bold",
-  text: "Click to Play",
+  text: "",
 });
 controlLayer.addChild(text);
 var textCounter = canvas.display.text({
@@ -385,7 +342,22 @@ var textOptimum = canvas.display.text({
   text: "Optimum Moves " + opt,
 });
 bottomLayer.addChild(textOptimum);
-text.bind("click tap", async function () {
+
+var undoIcon = canvas.display.text({
+  x: canvas.width - 55,
+  y: 10,
+  font: "32px FontAwesome",
+  fill: "#FFFFFF",
+  text: "\uf2ea",
+});
+controlLayer.addChild(undoIcon);
+
+text.bind("click tap", () => {
+  textClick();
+});
+
+async function textClick() {
+  if (dropping) return;
   console.log("Text clicked");
   if (d == 0) {
     text.text = "Please Set the number of disks first";
@@ -394,12 +366,17 @@ text.bind("click tap", async function () {
   }
   if (!pause) return;
   if (endState) {
+    text.text = "";
+    canvas.redraw();
     count = 0;
     textCounter.text = "Moves " + count;
     await moveToStart(disks);
+    dropping = true;
+    canvas.timeline.stop();
     setTimeout(() => {
       resetRotation();
-    }, 1000);
+    }, 500);
+    running = false;
     endState = false;
   } else {
     pause = false;
@@ -411,9 +388,14 @@ text.bind("click tap", async function () {
     console.log("running = " + running);
     first = false;
   }
-});
-
+}
+var undo = [];
 leftSelect.bind("click tap", async function () {
+  if (pause) {
+    pause = false;
+    running = true;
+    canvas.timeline.start();
+  }
   if (move.length == 0 && leftPost.length == 1) {
     canvas.background.set("rgb(100,10,10)");
     setTimeout(() => {
@@ -422,17 +404,21 @@ leftSelect.bind("click tap", async function () {
     return;
   }
   move.push(leftPost);
-  console.log(move);
+  //  console.log(move);
   if (move.length == 2) {
+    left.fill = "green";
+    canvas.redraw();
     await moveDisc(move[0], move[1]);
     left.fill = "#fff";
     center.fill = "#fff";
     right.fill = "#fff";
     canvas.redraw();
+    undo = move;
     move = [];
   } else {
-    left.fill = "green";
+    left.fill = "blue";
     canvas.redraw();
+    undo = move;
   }
 });
 
@@ -445,17 +431,21 @@ centerSelect.bind("click tap", async function () {
     return;
   }
   move.push(centerPost);
-  console.log(move);
+  //  console.log(move);
   if (move.length == 2) {
+    center.fill = "green";
+    canvas.redraw();
     await moveDisc(move[0], move[1]);
     left.fill = "#fff";
     center.fill = "#fff";
     right.fill = "#fff";
     canvas.redraw();
+    undo = move;
     move = [];
   } else {
-    center.fill = "green";
+    center.fill = "blue";
     canvas.redraw();
+    undo = move;
   }
 });
 
@@ -468,26 +458,72 @@ rightSelect.bind("click tap", async function () {
     return;
   }
   move.push(rightPost);
-  console.log(move);
+  //  console.log(move);
   if (move.length == 2) {
+    right.fill = "green";
+    canvas.redraw();
     await moveDisc(move[0], move[1]);
     left.fill = "#fff";
     center.fill = "#fff";
     right.fill = "#fff";
     canvas.redraw();
+    undo = move;
     move = [];
   } else {
-    right.fill = "green";
+    right.fill = "blue";
     canvas.redraw();
+    undo = move;
   }
 });
+function undoButton() {
+  undoBut.disabled = true;
+  undoFunc(undo);
+}
+async function undoFunc(u) {
+  console.log("Undo button pressed");
+  //console.log("Undo length = " + u.length);
+  //console.log(u);
+  if (u.length == 0) {
+    undoBut.disabled = false;
+    return;
+  }
+
+  if (u.length == 1) {
+    left.fill = "#fff";
+    center.fill = "#fff";
+    right.fill = "#fff";
+    canvas.redraw();
+    undo = [];
+    move = [];
+    undoBut.disabled = false;
+  } else {
+    move = [];
+    await moveDisc(u[1], u[0]);
+
+    left.fill = "#fff";
+    center.fill = "#fff";
+    right.fill = "#fff";
+    canvas.redraw();
+    undo = [];
+    undoBut.disabled = false;
+  }
+}
 
 function moveToStart(d) {
+  left.fill = "#fff";
+  center.fill = "#fff";
+  right.fill = "#fff";
+  canvas.redraw();
+  move = [];
   d.forEach((disc, index) => {
     disc.animate(
       {
         x: left.x,
-        y: center.y + (center.height / 2 - dh / 2) - dh * index,
+        y:
+          center.y +
+          (center.height / 2 - dh / 2) -
+          dh * index -
+          (center.height + dropHeight),
       },
       {
         duration: "short",
@@ -532,8 +568,8 @@ async function moveDisc(s, t) {
                       dh * (t.length - 1),
                   },
                   {
-                    duration: aniDuration,
-                    easing: "ease-in-out-quad",
+                    duration: "short",
+                    easing: "ease-out-bounce",
                     callback: function () {
                       //canvas.redraw();
                       resolve();
@@ -553,14 +589,24 @@ async function moveDisc(s, t) {
     return;
   }
   if (!pause || move.length == 2) {
-    count = count + 1;
+    if (!move.length == 0) {
+      count = count + 1;
+      textCounter.text = "Moves " + count;
+      t.push(s.pop());
+    }
+  }
+  if (move.length == 0 && undo.length == 2) {
+    //  console.log("move undone");
+    //console.log("Old Count = " + count)
+    count = count - 1;
+    //  console.log("New Count " + count)
     textCounter.text = "Moves " + count;
+    canvas.redraw();
     t.push(s.pop());
   }
   if (rightPost.length == d + 1) {
     pause = true;
     endState = true;
-    running = false;
   }
 }
 
